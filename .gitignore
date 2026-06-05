@@ -1,0 +1,11 @@
+node_modules
+dist
+.env
+.env.local
+.DS_Store
+*.tsbuildinfo
+.turbo
+target/
+.pnpm-store/
+apps/web/.env
+apps/api/.env
