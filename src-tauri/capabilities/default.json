@@ -1,0 +1,14 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/schema/capabilities.json",
+  "identifier": "default",
+  "description": "Default capabilities for vibewriting desktop app",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "shell:allow-open",
+    "http:default",
+    "os:default",
+    "store:default",
+    "sql:default"
+  ]
+}

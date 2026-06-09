@@ -7,12 +7,16 @@
     "dev:web": "pnpm --filter web dev",
     "dev:api": "pnpm --filter api dev",
     "dev": "concurrently \"pnpm dev:api\" \"pnpm dev:web\"",
+    "dev:tauri": "tauri dev",
     "build:web": "pnpm --filter web build",
     "build:api": "pnpm --filter api build",
     "build": "pnpm build:api && pnpm build:web",
+    "build:tauri": "tauri build",
+    "tauri": "tauri",
     "typecheck": "pnpm -r typecheck"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "^2",
     "concurrently": "^9.1.2",
     "typescript": "^5.7.3"
   },

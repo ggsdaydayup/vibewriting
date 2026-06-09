@@ -5,7 +5,13 @@ dist
 .DS_Store
 *.tsbuildinfo
 .turbo
-target/
 .pnpm-store/
 apps/web/.env
 apps/api/.env
+
+# Rust / Tauri
+src-tauri/target/
+src-tauri/gen/
+*.db
+*.db-shm
+*.db-wal
