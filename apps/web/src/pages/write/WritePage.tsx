@@ -7,6 +7,7 @@ import {
   PenLine,
   BarChart3,
   ShieldCheck,
+  CheckCircle2,
 } from "lucide-react";
 import { WritingEditor } from "../../components/editor/WritingEditor";
 import { ChapterTree } from "../../components/sidebar/ChapterTree";
@@ -18,7 +19,7 @@ import { ConsistencyCheckCard } from "../../components/editor/ConsistencyCheckCa
 import { storageClient } from "../../lib/storage";
 import { useEditorStore } from "../../lib/store/editor";
 import { Button } from "../../components/ui/button";
-import type { Chapter, Project, Persona } from "@vibewriting/shared";
+import type { Chapter, Project, Persona, Character } from "@vibewriting/shared";
 
 type RightPanel = "assistant" | "foreshadowing" | "rhythm" | null;
 
@@ -36,12 +37,16 @@ export function WritePage() {
   const [chapter, setLocalChapter] = useState<Chapter | null>(null);
   const [project, setLocalProject] = useState<Project | null>(null);
   const [allChapters, setAllChapters] = useState<Chapter[]>([]);
+  const [allCharacters, setAllCharacters] = useState<Character[]>([]);
   const [rightPanel, setRightPanel] = useState<RightPanel>("assistant");
   const [showAutopilot, setShowAutopilot] = useState(false);
   const [showConsistencyCheck, setShowConsistencyCheck] = useState(false);
+  const [phase3Analyzing, setPhase3Analyzing] = useState(false);
+  const [phase3Done, setPhase3Done] = useState(false);
   const [loading, setLoading] = useState(true);
   const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevChapterId = useRef<string | null>(null);
+  const writingStartTime = useRef<number>(Date.now());
 
   const fetchData = useCallback(async (id: string) => {
     setLoading(true);
@@ -60,6 +65,10 @@ export function WritePage() {
       const chapters = await chaptersRes.json<Chapter[]>();
       setAllChapters(chapters);
 
+      const charsRes = await storageClient.get(`/characters?projectId=${ch.projectId}`);
+      const chars = await charsRes.json<Character[]>();
+      setAllCharacters(chars);
+
       if (proj.personaId) {
         const personaRes = await storageClient.get(`/personas/${proj.personaId}`);
         const persona = await personaRes.json<Persona>();
@@ -72,10 +81,11 @@ export function WritePage() {
 
   useEffect(() => {
     if (!chapterId) return;
-    // 切换章节时触发一致性检查
     if (prevChapterId.current !== chapterId) {
       prevChapterId.current = chapterId;
       setShowConsistencyCheck(true);
+      setPhase3Done(false);
+      writingStartTime.current = Date.now();
     }
     fetchData(chapterId);
   }, [chapterId, fetchData]);
@@ -93,15 +103,34 @@ export function WritePage() {
     }, 2000);
   }, [chapterId]);
 
+  /** 章节完成后触发 Phase 2 摘要 + Phase 3 弧光/主旨分析 */
+  const runPhase3Analysis = useCallback(async (content: string) => {
+    if (!chapterId || phase3Analyzing) return;
+    setPhase3Analyzing(true);
+    try {
+      const durationSec = Math.round((Date.now() - writingStartTime.current) / 1000);
+      await Promise.all([
+        storageClient.post("/ai/summarize", { chapterId, content, force: true }),
+        storageClient.post("/ai/arc-advance", { chapterId, content }),
+        storageClient.post("/ai/theme-score", { chapterId, content }),
+        storageClient.patch(`/chapters/${chapterId}`, {
+          status: "completed",
+          writingDurationSec: durationSec,
+        }),
+      ]);
+      setPhase3Done(true);
+      fetchData(chapterId);
+    } finally {
+      setPhase3Analyzing(false);
+    }
+  }, [chapterId, phase3Analyzing, fetchData]);
+
   const handleAutopilotAccept = useCallback(async (content: string) => {
     if (!chapterId) return;
     setLocalChapter((prev) => (prev ? { ...prev, content } : null));
     setShowAutopilot(false);
-
-    // 自动触发摘要生成
-    await storageClient.post("/ai/summarize", { chapterId, content, force: true });
-    fetchData(chapterId);
-  }, [chapterId, fetchData]);
+    await runPhase3Analysis(content);
+  }, [chapterId, runPhase3Analysis]);
 
   const toggleRightPanel = (panel: RightPanel) => {
     setRightPanel((prev) => (prev === panel ? null : panel));
@@ -136,6 +165,35 @@ export function WritePage() {
         <div className="ml-auto flex items-center gap-1">
           {isGenerating && (
             <span className="text-xs text-purple-400 animate-pulse mr-2">AI 生成中…</span>
+          )}
+
+          {phase3Analyzing && (
+            <span className="text-xs text-blue-400/70 animate-pulse mr-2">分析中…</span>
+          )}
+
+          {phase3Done && !phase3Analyzing && (
+            <span className="text-xs text-green-400/70 mr-2 flex items-center gap-1">
+              <CheckCircle2 className="w-3 h-3" />已分析
+            </span>
+          )}
+
+          {/* 完成章节 */}
+          {chapter?.status !== "completed" && (
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={phase3Analyzing}
+              onClick={() => {
+                const content = chapter?.content ?? "";
+                if (content.length < 100) return;
+                runPhase3Analysis(content);
+              }}
+              title="标记完成 — 自动生成摘要、推进角色弧光、分析主旨贡献度"
+              className="text-white/40 hover:text-green-400 text-xs gap-1"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              完成章节
+            </Button>
           )}
 
           <Button
@@ -242,6 +300,7 @@ export function WritePage() {
               <div className="overflow-y-auto">
                 <RhythmDashboard
                   chapters={allChapters}
+                  characters={allCharacters}
                   currentChapterId={chapterId}
                 />
               </div>

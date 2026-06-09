@@ -34,6 +34,9 @@ export const chapters = pgTable("chapters", {
   vibePrompt: text("vibe_prompt"),
   wordCount: integer("word_count").notNull().default(0),
   endSnapshot: jsonb("end_snapshot"),
+  themeScore: integer("theme_score"), // 0-100，主旨贡献度
+  themeScoreReason: text("theme_score_reason"),
+  writingDurationSec: integer("writing_duration_sec"), // 本章累计写作时长（秒）
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
