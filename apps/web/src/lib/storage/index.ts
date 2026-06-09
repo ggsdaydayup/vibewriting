@@ -1,27 +1,22 @@
 /**
  * 统一数据访问层
  *
- * Web 端：所有请求代理到 Hono API（/api/*），API 再写 Supabase
- * Tauri 端：读写本地 SQLite（tauri-plugin-sql），联网时后台同步 Supabase
- *
- * 上层组件统一通过 storageClient 访问，不感知平台差异。
- * MVP 阶段 Tauri 端同样走 /api 代理（Tauri 内嵌 webview 可访问本地 API server），
- * 后续可替换为直接 SQLite 调用以支持完全离线。
+ * 上层组件统一通过 storageClient / streamRequest 访问，不感知平台差异。
+ * Web 端 & Tauri MVP：均走 /api 代理。
+ * 后续可替换 storageClient 实现为直接 SQLite（完全离线）。
  */
 
 import { isTauri } from "./platform";
-import { api, streamRequest } from "../api/client";
 
 export type { Platform } from "./platform";
 export { isTauri, getPlatform } from "./platform";
 
-// Re-export api client for convenience — same interface on both platforms
-export const storageClient = api;
-export { streamRequest };
+// Re-export unified client
+export { storageClient, api, streamRequest } from "../api/client";
 
 /**
  * Tauri 专属：通过 tauri-plugin-store 持久化轻量 KV 数据
- * （用于保存 AI 配置等无需同步到服务端的本地偏好）
+ * （保存 AI 配置等无需同步到服务端的本地偏好）
  */
 export async function localGet<T>(key: string): Promise<T | null> {
   if (!isTauri()) {

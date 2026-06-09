@@ -2,10 +2,10 @@ import { Hono } from "hono";
 import { streamText } from "ai";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
-import { eq } from "drizzle-orm";
+import { eq, lt } from "drizzle-orm";
 import { authMiddleware } from "../../middleware/auth.js";
-import { getBookContext } from "../../lib/context.js";
-import { buildSystemPrompt, buildAutopilotPrompt } from "../../lib/ai/prompts.js";
+import { getFourLayerContext } from "../../lib/context.js";
+import { buildFourLayerSystemPrompt, buildAutopilotPrompt } from "../../lib/ai/prompts.js";
 import { createAIProvider } from "../../lib/ai/providers.js";
 import { db, chapters } from "../../db/index.js";
 
@@ -13,15 +13,16 @@ const schema = z.object({
   chapterId: z.string().uuid(),
   vibePrompt: z.string().max(500).optional(),
   targetWordCount: z.number().min(500).max(10000).optional(),
+  approvedOutline: z.string().optional(), // 用户确认过的大纲（JSON 字符串）
 });
 
 export const autopilotRoute = new Hono<{ Variables: { userId: string } }>()
   .use(authMiddleware)
   .post("/", zValidator("json", schema), async (c) => {
-    const { chapterId, vibePrompt, targetWordCount } = c.req.valid("json");
+    const { chapterId, vibePrompt, targetWordCount, approvedOutline } = c.req.valid("json");
     const userId = c.get("userId");
 
-    const ctx = await getBookContext(chapterId, userId);
+    const ctx = await getFourLayerContext(chapterId, userId);
     if (!ctx.aiConfig?.apiKey) {
       return c.json({ error: "AI provider not configured" }, 400);
     }
@@ -31,8 +32,12 @@ export const autopilotRoute = new Hono<{ Variables: { userId: string } }>()
     });
     if (!chapter) return c.json({ error: "Chapter not found" }, 404);
 
+    // 取前一章的 endSnapshot 作为章间连接锚点
     const prevChapter = await db.query.chapters.findFirst({
-      where: eq(chapters.projectId, chapter.projectId),
+      where: (c, { and, eq, lt }) => and(
+        eq(c.projectId, chapter.projectId),
+        lt(c.order, chapter.order)
+      ),
       orderBy: (c, { desc }) => [desc(c.order)],
     });
 
@@ -40,7 +45,7 @@ export const autopilotRoute = new Hono<{ Variables: { userId: string } }>()
       ? JSON.stringify(prevChapter.endSnapshot)
       : undefined;
 
-    const systemPrompt = buildSystemPrompt(ctx);
+    const systemPrompt = buildFourLayerSystemPrompt(ctx);
     const { system, prompt } = buildAutopilotPrompt(
       {
         ...chapter,
@@ -51,10 +56,11 @@ export const autopilotRoute = new Hono<{ Variables: { userId: string } }>()
       },
       vibePrompt,
       systemPrompt,
-      prevSnapshot
+      prevSnapshot,
+      approvedOutline
     );
 
-    const { model } = createAIProvider(ctx.aiConfig);
+    const model = createAIProvider(ctx.aiConfig);
     const wordHint = targetWordCount
       ? `\n请控制字数在 ${targetWordCount} 字左右。`
       : "";

@@ -25,7 +25,7 @@ export const completeRoute = new Hono<{ Variables: { userId: string } }>()
 
     const systemPrompt = buildSystemPrompt(ctx);
     const { system, prompt } = buildCompletionPrompt(recentText, systemPrompt);
-    const { model } = createAIProvider(ctx.aiConfig);
+    const model = createAIProvider(ctx.aiConfig);
 
     const result = streamText({
       model,

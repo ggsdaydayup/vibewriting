@@ -1,42 +1,34 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import type { AIProviderConfig } from "@vibewriting/shared";
+import type { LanguageModel } from "ai";
 
-export function createAIProvider(config: AIProviderConfig) {
+/** Returns a LanguageModel instance ready for use with the Vercel AI SDK */
+export function createAIProvider(config: AIProviderConfig): LanguageModel {
   const { provider, model, apiKey, baseUrl } = config;
 
   switch (provider) {
     case "anthropic":
-      return {
-        model: createAnthropic({ apiKey })(model),
-      };
+      return createAnthropic({ apiKey })(model);
 
     case "openai":
-      return {
-        model: createOpenAI({ apiKey })(model),
-      };
+      return createOpenAI({ apiKey })(model);
 
     case "deepseek":
-      return {
-        model: createOpenAI({
-          apiKey,
-          baseURL: baseUrl || "https://api.deepseek.com/v1",
-        })(model),
-      };
+      return createOpenAI({
+        apiKey,
+        baseURL: baseUrl || "https://api.deepseek.com/v1",
+      })(model);
 
     case "qwen":
-      return {
-        model: createOpenAI({
-          apiKey,
-          baseURL: baseUrl || "https://dashscope.aliyuncs.com/compatible-mode/v1",
-        })(model),
-      };
+      return createOpenAI({
+        apiKey,
+        baseURL: baseUrl || "https://dashscope.aliyuncs.com/compatible-mode/v1",
+      })(model);
 
     case "custom":
       if (!baseUrl) throw new Error("baseUrl is required for custom provider");
-      return {
-        model: createOpenAI({ apiKey, baseURL: baseUrl })(model),
-      };
+      return createOpenAI({ apiKey, baseURL: baseUrl })(model);
 
     default:
       throw new Error(`Unsupported AI provider: ${provider}`);
@@ -53,11 +45,7 @@ export const PROVIDER_PRESETS: Record<
   },
   anthropic: {
     label: "Anthropic Claude",
-    models: [
-      "claude-opus-4-5",
-      "claude-sonnet-4-5",
-      "claude-haiku-3-5",
-    ],
+    models: ["claude-opus-4-5", "claude-sonnet-4-5", "claude-haiku-3-5"],
   },
   deepseek: {
     label: "DeepSeek",

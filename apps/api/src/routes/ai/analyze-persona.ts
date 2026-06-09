@@ -34,7 +34,7 @@ export const analyzePersonaRoute = new Hono<{ Variables: { userId: string } }>()
       baseUrl: settings.aiBaseUrl ?? undefined,
     };
 
-    const { model } = createAIProvider(aiConfig);
+    const model = createAIProvider(aiConfig);
     const prompt = buildPersonaAnalysisPrompt(sampleTexts);
 
     const { text } = await generateText({

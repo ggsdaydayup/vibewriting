@@ -29,7 +29,7 @@ export const chatRoute = new Hono<{ Variables: { userId: string } }>()
     }
 
     const systemPrompt = buildSystemPrompt(ctx);
-    const { model } = createAIProvider(ctx.aiConfig);
+    const model = createAIProvider(ctx.aiConfig);
 
     const result = streamText({
       model,

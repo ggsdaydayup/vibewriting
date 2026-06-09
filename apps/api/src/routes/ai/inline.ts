@@ -33,7 +33,7 @@ export const inlineRoute = new Hono<{ Variables: { userId: string } }>()
       surroundingContext ?? "",
       systemPrompt
     );
-    const { model } = createAIProvider(ctx.aiConfig);
+    const model = createAIProvider(ctx.aiConfig);
 
     const result = streamText({
       model,
