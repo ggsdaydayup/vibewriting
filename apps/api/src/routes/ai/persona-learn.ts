@@ -10,7 +10,7 @@ import { compilePersonaFragment } from "../../lib/ai/prompts.js";
 import { authMiddleware } from "../../middleware/auth.js";
 import type { AIProviderConfig } from "@vibewriting/shared";
 
-const router = new Hono();
+const router = new Hono<{ Variables: { userId: string } }>();
 router.use(authMiddleware);
 
 const bodySchema = z.object({

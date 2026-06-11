@@ -49,6 +49,9 @@ export const autopilotRoute = new Hono<{ Variables: { userId: string } }>()
     const { system, prompt } = buildAutopilotPrompt(
       {
         ...chapter,
+        content: chapter.content ?? undefined,
+        summary: chapter.summary ?? undefined,
+        vibePrompt: chapter.vibePrompt ?? undefined,
         createdAt: chapter.createdAt.toISOString(),
         updatedAt: chapter.updatedAt.toISOString(),
         status: chapter.status as any,

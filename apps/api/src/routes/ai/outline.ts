@@ -7,7 +7,7 @@ import { buildOutlinePrompt } from "../../lib/ai/prompts.js";
 import { createAIProvider } from "../../lib/ai/providers.js";
 import { authMiddleware } from "../../middleware/auth.js";
 
-const router = new Hono();
+const router = new Hono<{ Variables: { userId: string } }>();
 router.use(authMiddleware);
 
 const bodySchema = z.object({

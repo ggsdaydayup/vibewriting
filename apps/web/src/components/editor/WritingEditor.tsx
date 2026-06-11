@@ -170,11 +170,26 @@ export function WritingEditor({ chapterId, initialContent, onSave }: WritingEdit
   }, [editor, chapterId]);
 
   return (
-    <div className="relative h-full">
-      <EditorContent
-        editor={editor}
-        className="h-full px-8 py-12 overflow-y-auto"
-      />
+    <div className="relative h-full bg-[#0f0f0f]">
+      <style>{`
+        .tiptap-editor-wrap .ProseMirror {
+          max-width: 680px;
+          margin: 0 auto;
+          padding: 4rem 1.5rem 8rem;
+          font-size: 16px;
+          line-height: 1.9;
+          color: rgba(255,255,255,0.8);
+          letter-spacing: 0.01em;
+        }
+        @media (min-width: 768px) {
+          .tiptap-editor-wrap .ProseMirror {
+            padding: 5rem 2.5rem 10rem;
+          }
+        }
+      `}</style>
+      <div className="tiptap-editor-wrap h-full overflow-y-auto">
+        <EditorContent editor={editor} className="min-h-full" />
+      </div>
       {inlineCmd.visible && inlineCmd.rect && (
         <InlineCommandBar
           rect={inlineCmd.rect}
