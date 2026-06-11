@@ -14,15 +14,24 @@ import { settingsRoutes } from "./routes/settings.js";
 const app = new Hono();
 
 app.use("*", logger());
+
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:4173",
+  "tauri://localhost",
+  "https://tauri.localhost",
+  ...(process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
+    : []),
+];
+
 app.use(
   "*",
   cors({
-    origin: [
-      "http://localhost:5173",
-      "tauri://localhost",
-      "https://tauri.localhost",
-    ],
+    origin: (origin) => (allowedOrigins.includes(origin) ? origin : allowedOrigins[0]),
     credentials: true,
+    allowHeaders: ["Content-Type", "Authorization"],
+    allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   })
 );
 
