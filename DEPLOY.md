@@ -1,5 +1,68 @@
 # vibewriting 部署指南
 
+> **国内版部署栈（推荐）**：阿里云 RDS PostgreSQL / 腾讯云 TDSQL-PG（数据库）+ 自定义 JWT 认证 + 任意国内云主机（API）+ Vercel / CDN（前端）
+>
+> **国际版部署栈**：Supabase + Railway + Vercel
+
+---
+
+## 国内版部署（中国大陆用户）
+
+### 第一步：创建 PostgreSQL 数据库
+
+**阿里云 RDS PostgreSQL：**
+1. 控制台 → RDS → 创建实例 → 数据库引擎选 **PostgreSQL 15**
+2. 创建数据库 `vibewriting`，创建账号并授权
+3. 白名单中放开 API 服务器 IP
+4. 获取连接串：`postgresql://user:pass@rm-xxx.pg.rds.aliyuncs.com:5432/vibewriting`
+
+**腾讯云 TDSQL-PG：**
+1. 控制台 → 数据库 → TDSQL-C PostgreSQL版 → 新建集群
+2. 同上配置后获取连接串
+
+### 第二步：初始化数据库表结构
+
+连接到 PostgreSQL 后依次执行：
+```bash
+psql $DATABASE_URL -f supabase/migrations/0001_schema.sql
+psql $DATABASE_URL -f supabase/migrations/0002_custom_auth.sql
+```
+
+或将两个 SQL 文件内容粘贴到云控制台的查询编辑器中执行。
+
+### 第三步：配置 API 环境变量
+
+```env
+DATABASE_URL=postgresql://user:pass@your-rds-host:5432/vibewriting
+JWT_SECRET=<openssl rand -base64 64 生成>
+PORT=3001
+ALLOWED_ORIGINS=https://your-frontend-domain.com
+```
+
+### 第四步：部署 API（以阿里云 ECS 为例）
+
+```bash
+# 安装依赖并构建
+pnpm install
+pnpm -F api build
+
+# 使用 PM2 启动
+pm2 start apps/api/dist/index.js --name vibewriting-api
+```
+
+也可使用 Railway（国际线路）或云函数（阿里云 FC / 腾讯云 SCF）部署。
+
+### 第五步：配置前端
+
+`apps/web/.env.production`：
+```env
+VITE_API_URL=https://api.your-domain.com
+```
+
+---
+
+## 国际版部署（原 Supabase + Railway 方案）
+
 完整部署栈：**Supabase**（数据库 + 认证）+ **Railway**（API 后端）+ **Vercel**（前端）
 
 ---

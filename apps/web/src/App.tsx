@@ -1,7 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { supabase } from "./lib/supabase/client";
-import { useAuthStore } from "./lib/store/auth";
+import { useAuthStore } from "./lib/auth";
 import { LoginPage } from "./pages/auth/LoginPage";
 import { RegisterPage } from "./pages/auth/RegisterPage";
 import { DashboardPage } from "./pages/dashboard/DashboardPage";
@@ -10,33 +9,26 @@ import { WritePage } from "./pages/write/WritePage";
 import { SettingsPage } from "./pages/SettingsPage";
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuthStore();
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center text-[hsl(var(--muted-foreground))]">
-      加载中...
-    </div>
-  );
+  const user = useAuthStore((s) => s.user);
   if (!user) return <Navigate to="/login" replace />;
   return <>{children}</>;
 }
 
 export function App() {
-  const { setSession, setLoading } = useAuthStore();
+  const initFromStorage = useAuthStore((s) => s.initFromStorage);
+  const [initializing, setInitializing] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setLoading(false);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session);
-      }
-    );
-
-    return () => subscription.unsubscribe();
+    initFromStorage().finally(() => setInitializing(false));
   }, []);
+
+  if (initializing) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a]">
+        <div className="w-5 h-5 rounded-full border-2 border-purple-500/30 border-t-purple-400 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <BrowserRouter>

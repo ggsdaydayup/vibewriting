@@ -1,26 +1,18 @@
-import { supabase } from "../supabase/client";
+import { getAccessToken } from "../auth";
 
 const API_BASE = "/api";
 
-async function getAuthHeader(): Promise<Record<string, string>> {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session?.access_token) return {};
-  return { Authorization: `Bearer ${session.access_token}` };
+function getAuthHeader(): Record<string, string> {
+  const token = getAccessToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-/**
- * Raw fetch wrapper — returns the Response object so callers can call .json() themselves.
- * Throws on non-2xx status codes.
- */
 async function rawRequest(path: string, options: RequestInit = {}): Promise<Response> {
-  const authHeaders = await getAuthHeader();
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
-      ...authHeaders,
+      ...getAuthHeader(),
       ...(options.headers as Record<string, string>),
     },
   });
@@ -39,16 +31,12 @@ async function rawRequest(path: string, options: RequestInit = {}): Promise<Resp
   return res;
 }
 
-/**
- * Typed convenience wrapper — parses JSON and returns T directly.
- * Kept for compatibility with existing code that does `api.get<T>(...)`.
- */
 async function typedRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
   const res = await rawRequest(path, options);
   return res.json() as Promise<T>;
 }
 
-/** storageClient: returns raw Response (new Phase-2 code pattern) */
+/** storageClient: returns raw Response */
 export const storageClient = {
   get: (path: string) => rawRequest(path),
   post: (path: string, body: unknown) =>
@@ -60,7 +48,7 @@ export const storageClient = {
   delete: (path: string) => rawRequest(path, { method: "DELETE" }),
 };
 
-/** api: returns parsed T (backwards-compat, used in Phase-1 code) */
+/** api: returns parsed T (backwards-compat) */
 export const api = {
   get: <T>(path: string) => typedRequest<T>(path),
   post: <T>(path: string, body: unknown) =>
@@ -78,10 +66,9 @@ export async function streamRequest(
   onChunk: (text: string) => void,
   signal?: AbortSignal
 ): Promise<void> {
-  const authHeaders = await getAuthHeader();
   const res = await fetch(`${API_BASE}${path}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", ...authHeaders },
+    headers: { "Content-Type": "application/json", ...getAuthHeader() },
     body: JSON.stringify(body),
     signal,
   });

@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { supabase } from "../../lib/supabase/client";
+import { useAuthStore } from "../../lib/auth";
 import { PenLine, ArrowRight, Loader2 } from "lucide-react";
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const login = useAuthStore((s) => s.login);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -14,10 +15,14 @@ export function LoginPage() {
     e.preventDefault();
     setError("");
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
-    if (error) setError(error.message);
-    else navigate("/dashboard");
+    try {
+      await login(email, password);
+      navigate("/dashboard");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "登录失败");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (

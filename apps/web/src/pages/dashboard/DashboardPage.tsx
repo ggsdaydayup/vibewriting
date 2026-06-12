@@ -5,7 +5,7 @@ import {
   Sparkles, ChevronRight, Clock,
 } from "lucide-react";
 import { api } from "../../lib/api/client";
-import { useAuthStore } from "../../lib/store/auth";
+import { useAuthStore } from "../../lib/auth";
 import type { Project } from "@vibewriting/shared";
 
 function ProjectCard({ project }: { project: Project }) {
@@ -65,7 +65,8 @@ function SkeletonCard() {
 
 export function DashboardPage() {
   const navigate = useNavigate();
-  const { user, signOut } = useAuthStore();
+  const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -107,7 +108,7 @@ export function DashboardPage() {
               <Settings className="w-4 h-4" />
             </Link>
             <button
-              onClick={() => signOut().then(() => navigate("/login"))}
+              onClick={() => { logout(); navigate("/login"); }}
               className="w-8 h-8 flex items-center justify-center rounded-lg text-white/30 hover:text-white/70 hover:bg-white/5 transition-all"
               title="退出"
             >

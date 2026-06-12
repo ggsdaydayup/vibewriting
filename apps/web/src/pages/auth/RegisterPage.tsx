@@ -1,49 +1,28 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { supabase } from "../../lib/supabase/client";
-import { PenLine, ArrowRight, Loader2, Mail } from "lucide-react";
+import { useAuthStore } from "../../lib/auth";
+import { PenLine, ArrowRight, Loader2 } from "lucide-react";
 
 export function RegisterPage() {
   const navigate = useNavigate();
+  const register = useAuthStore((s) => s.register);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [done, setDone] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     setLoading(true);
-    const { error } = await supabase.auth.signUp({ email, password });
-    setLoading(false);
-    if (error) setError(error.message);
-    else setDone(true);
-  }
-
-  if (done) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-[#0a0a0a]">
-        <div className="animate-fade-in-scale text-center space-y-5 max-w-xs">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-green-500/15 border border-green-500/20">
-            <Mail className="w-7 h-7 text-green-400" />
-          </div>
-          <div>
-            <h2 className="text-xl font-semibold text-white">确认邮件已发送</h2>
-            <p className="text-sm text-white/40 mt-2 leading-relaxed">
-              我们向 <span className="text-white/60">{email}</span> 发送了确认邮件，<br />
-              点击邮件中的链接完成注册。
-            </p>
-          </div>
-          <Link
-            to="/login"
-            className="inline-block text-sm text-purple-400 hover:text-purple-300 transition-colors"
-          >
-            返回登录 →
-          </Link>
-        </div>
-      </div>
-    );
+    try {
+      await register(email, password);
+      navigate("/dashboard");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "注册失败");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (

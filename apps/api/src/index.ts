@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { aiRoutes } from "./routes/ai/index.js";
+import { authRoutes } from "./routes/auth.js";
 import { projectRoutes } from "./routes/projects.js";
 import { chapterRoutes } from "./routes/chapters.js";
 import { personaRoutes } from "./routes/personas.js";
@@ -35,8 +36,9 @@ app.use(
   })
 );
 
-app.get("/health", (c) => c.json({ status: "ok" }));
+app.get("/health", (c) => c.json({ status: "ok", ts: Date.now() }));
 
+app.route("/api/auth", authRoutes);
 app.route("/api/ai", aiRoutes);
 app.route("/api/projects", projectRoutes);
 app.route("/api/chapters", chapterRoutes);

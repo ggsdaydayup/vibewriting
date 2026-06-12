@@ -1,14 +1,10 @@
 import { createMiddleware } from "hono/factory";
-import { createClient } from "@supabase/supabase-js";
+import { verifyToken } from "../lib/auth/jwt.js";
 
-const supabaseUrl = process.env.SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-// 单例，避免每次请求重复初始化
-const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: { persistSession: false },
-});
-
+/**
+ * 本地 JWT 验证中间件（无需调用 Supabase）
+ * 支持自托管在国内云，零外部依赖，每请求验证耗时 < 1ms
+ */
 export const authMiddleware = createMiddleware<{
   Variables: { userId: string };
 }>(async (c, next) => {
@@ -17,13 +13,11 @@ export const authMiddleware = createMiddleware<{
     return c.json({ error: "Unauthorized" }, 401);
   }
 
-  const token = authHeader.slice(7);
-  const { data, error } = await supabase.auth.getUser(token);
-
-  if (error || !data.user) {
-    return c.json({ error: "Invalid token" }, 401);
+  try {
+    const { userId } = await verifyToken(authHeader.slice(7));
+    c.set("userId", userId);
+    await next();
+  } catch {
+    return c.json({ error: "Invalid or expired token" }, 401);
   }
-
-  c.set("userId", data.user.id);
-  await next();
 });
