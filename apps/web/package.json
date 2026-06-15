@@ -22,6 +22,7 @@
     "@tiptap/extension-placeholder": "^2.11.5",
     "@tiptap/extension-text": "^2.11.5",
     "@tiptap/react": "^2.11.5",
+    "@tiptap/pm": "^2.11.5",
     "@tiptap/starter-kit": "^2.11.5",
     "@vibewriting/shared": "workspace:*",
     "ai": "^4.3.16",
@@ -46,6 +47,6 @@
     "tailwindcss": "^4.1.7",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.34.1",
-    "vite": "^6.3.5"
+    "vite": "^8.0.16"
   }
 }
